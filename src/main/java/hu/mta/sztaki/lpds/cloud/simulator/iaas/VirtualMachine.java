@@ -29,6 +29,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.MaxMinConsumer;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceSpreader;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
@@ -42,6 +43,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class VirtualMachine extends MaxMinConsumer {
 
+	/** needed for live migration:
+	 * pageSize: memory page size in bytes
+	 */
+	public final static double pageSize = 4096; 
+	
 	public static class StateChangeException extends VMManagementException {
 		private static final long serialVersionUID = 2950595344006507672L;
 
@@ -68,6 +74,37 @@ public class VirtualMachine extends MaxMinConsumer {
 		}
 	}
 
+	/**
+	 * This class models the resource consumption of a memory-intensive
+	 * task.
+	 * @param  memDirtyingRate: percentage of pages dirtied every second 
+	 * @param  pageNum: total number of pages associated to this consumption
+	 */
+	public static class MemoryIntensiveTask extends ResourceConsumption{
+
+		private double memDirtyingRate;
+		
+		public MemoryIntensiveTask(double total, double limit,
+				ResourceSpreader consumer, ResourceSpreader provider,
+				ConsumptionEvent e, double memDirtyingRate, int memorySize) {
+			super(total, limit, consumer, provider, e);
+			this.memDirtyingRate = memDirtyingRate;
+			setMemDirtyingRate(memDirtyingRate);
+			this.pageNum = memorySize;
+		}
+		
+		public void suspend(){
+			super.suspend();
+			this.currentMemDirtyingRate = 0.0;
+		}
+		
+		public boolean registerConsumption(){
+			this.currentMemDirtyingRate = this.memDirtyingRate;
+			return super.registerConsumption();
+		}
+		
+	}
+	
 	private final EventSetup sdEvent = new EventSetup(State.SHUTDOWN);
 	private final EventSetup susEvent = new EventSetup(State.SUSPENDED);
 
@@ -502,6 +539,32 @@ public class VirtualMachine extends MaxMinConsumer {
 			return null;
 		}
 	}
+	
+	public ResourceConsumption newComputeTask(final double total,
+			final double limit, final ResourceConsumption.ConsumptionEvent e,
+			double dirtyingRate, int pageNumber)
+			throws StateChangeException, NetworkException {
+		if (ra == null) {
+			return null;
+		}
+		ResourceConsumption cons = new ResourceConsumption(total, limit, this,
+				ra.host, e);
+		if (cons.registerConsumption()) {
+			final long bgnwload = va.getBgNetworkLoad();
+			if (bgnwload > 0) {
+				final long minBW = Math.min(
+						bgnwload,
+						Math.min(ra.host.localDisk.getOutputbw(),
+								vasource.getInputbw()));
+				NetworkNode.initTransfer(minBW * cons.getCompletionDistance(),
+						minBW, ra.host.localDisk, vasource,
+						new ConsumptionEventAdapter());
+			}
+			return cons;
+		} else {
+			return null;
+		}
+	}
 
 	public void setResourceAllocation(PhysicalMachine.ResourceAllocation newRA)
 			throws VMManagementException {
@@ -528,6 +591,21 @@ public class VirtualMachine extends MaxMinConsumer {
 		setState(State.NONSERVABLE);
 	}
 
+	/**
+	 * 
+	 * @return the total dirtying rate on the VM
+	 */
+	public double getTotalDirtyingRate(){
+		int pageNum = 0;
+		for(ResourceConsumption r: this.underProcessing)
+			pageNum = (int) (r.getMemDirtyingRate() * r.getPageNum());
+		return pageNum;
+	}
+	
+	public int getTotalMemoryPages(){  
+		return (int) (this.ra.allocated.requiredMemory / pageSize);
+	}
+	
 	@Override
 	public String toString() {
 		return "VM(" + currState + " " + super.toString() + ")";
