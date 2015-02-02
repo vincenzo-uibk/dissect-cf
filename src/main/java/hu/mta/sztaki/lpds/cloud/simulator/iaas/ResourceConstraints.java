@@ -30,6 +30,7 @@ public class ResourceConstraints implements Comparable<ResourceConstraints> {
 	public final double requiredProcessingPower;
 	public final long requiredMemory;
 	public final double totalProcessingPower;
+	
 	public static final ResourceConstraints noResources = new ResourceConstraints(
 			0, 0, 0);
 
