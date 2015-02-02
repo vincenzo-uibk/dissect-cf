@@ -61,6 +61,14 @@ public class ResourceConsumption {
 	double limithelper;
 	boolean unassigned;
 	boolean inassginmentprocess;
+	
+	/**
+	 * Added for live migration
+	 * memDirtyingRate: percentage of pages dirtied
+	 * pageNum: total number of pages associated to this consumption
+	 */
+	protected double currentMemDirtyingRate = 0.0;
+	protected int pageNum = 0;
 
 	final ConsumptionEvent ev;
 
@@ -70,6 +78,14 @@ public class ResourceConsumption {
 	private boolean resumable = true;
 	private boolean registered = false;
 
+	/**
+	 * 
+	 * @param total toBeProcessed
+	 * @param limit 
+	 * @param consumer: the VM
+	 * @param provider: the PM
+	 * @param e: The consumption Event
+	 */
 	public ResourceConsumption(final double total, final double limit,
 			final ResourceSpreader consumer, final ResourceSpreader provider,
 			final ConsumptionEvent e) {
@@ -236,6 +252,26 @@ public class ResourceConsumption {
 		}
 		calcCompletionDistance();
 		return realLimit;
+	}
+
+	
+	
+	public double getMemDirtyingRate() {
+		return currentMemDirtyingRate;
+	}
+
+	public void setMemDirtyingRate(double memDirtyingRate){
+		if(memDirtyingRate < 0.0 || memDirtyingRate > 1.0)
+			throw new IllegalArgumentException("Dirtying rate must be between 0.0 and 1.0");
+		this.currentMemDirtyingRate = memDirtyingRate;
+	}
+
+	public int getPageNum() {
+		return pageNum;
+	}
+
+	public void setPageNum(int pageNum) {
+		this.pageNum = pageNum;
 	}
 
 	@Override
