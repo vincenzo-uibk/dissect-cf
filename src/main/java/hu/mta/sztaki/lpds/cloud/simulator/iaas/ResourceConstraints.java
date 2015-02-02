@@ -25,9 +25,19 @@
 
 package hu.mta.sztaki.lpds.cloud.simulator.iaas;
 
+/**
+ * This class is intentionally non mutable, allowing those users (e.g. the class
+ * of IaaSService or Scheduler) who would want to share their current capacities
+ * not to create a new instance for every new query.
+ * 
+ * @author 
+ *         "Gabor Kecskemeti, Distributed and Parallel Systems Group, University of Innsbruck (c) 2013"
+ *         "Gabor Kecskemeti, Laboratory of Parallel and Distributed Systems, MTA SZTAKI (c) 2012"
+ */
 public class ResourceConstraints implements Comparable<ResourceConstraints> {
 	public final double requiredCPUs;
 	public final double requiredProcessingPower;
+	public final boolean requiredProcessingIsMinimum;
 	public final long requiredMemory;
 	public final double totalProcessingPower;
 	
@@ -36,10 +46,16 @@ public class ResourceConstraints implements Comparable<ResourceConstraints> {
 
 	public ResourceConstraints(final double cpu, final double processing,
 			final long memory) {
+		this(cpu, processing, false, memory);
+	}
+
+	public ResourceConstraints(final double cpu, final double processing,
+			boolean isMinimum, final long memory) {
 		requiredCPUs = cpu;
 		requiredMemory = memory;
 		requiredProcessingPower = processing;
 		totalProcessingPower = cpu * processing;
+		requiredProcessingIsMinimum = isMinimum;
 	}
 
 	@Override
@@ -59,10 +75,10 @@ public class ResourceConstraints implements Comparable<ResourceConstraints> {
 		double tcpu = 0;
 		double tpp = 0;
 		long tm = 0;
-		for (ResourceConstraints addition : toAdd) {
-			tcpu += addition.requiredCPUs;
-			tpp = Math.max(addition.requiredProcessingPower, tpp);
-			tm += addition.requiredMemory;
+		for (int i = 0; i < toAdd.length; i++) {
+			tcpu += toAdd[i].requiredCPUs;
+			tpp = Math.max(toAdd[i].requiredProcessingPower, tpp);
+			tm += toAdd[i].requiredMemory;
 		}
 		tpp = tcpu == 0 ? 0 : tpp;
 		return new ResourceConstraints(tcpu, tpp, tm);
