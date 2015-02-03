@@ -1,0 +1,36 @@
+-------------------------------------------------------------------------------
+Test set: at.ac.uibk.dps.cloud.simulator.test.simple.cloud.MemoryIntensiveTaskTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 2, Errors: 0, Skipped: 1, Time elapsed: 0.007 sec <<< FAILURE!
+suspendConsumption(at.ac.uibk.dps.cloud.simulator.test.simple.cloud.MemoryIntensiveTaskTest)  Time elapsed: 0.003 sec  <<< FAILURE!
+java.lang.AssertionError: Consumption should be incomplete
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest.pastSuspendChecks(ResourceConsumptionTest.java:152)
+	at at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest.suspendConsumption(ResourceConsumptionTest.java:161)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.FailOnTimeout$StatementThread.run(FailOnTimeout.java:74)
+
+cancelConsumption(at.ac.uibk.dps.cloud.simulator.test.simple.cloud.MemoryIntensiveTaskTest)  Time elapsed: 0 sec  <<< FAILURE!
+java.lang.AssertionError: Consumption should be incomplete
+	at org.junit.Assert.fail(Assert.java:88)
+	at org.junit.Assert.assertTrue(Assert.java:41)
+	at at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest.pastSuspendChecks(ResourceConsumptionTest.java:152)
+	at at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest.cancelConsumption(ResourceConsumptionTest.java:175)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.FailOnTimeout$StatementThread.run(FailOnTimeout.java:74)
+
