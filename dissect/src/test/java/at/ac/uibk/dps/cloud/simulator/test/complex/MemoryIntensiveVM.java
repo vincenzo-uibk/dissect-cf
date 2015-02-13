@@ -1,7 +1,7 @@
 package at.ac.uibk.dps.cloud.simulator.test.complex;
 
 import static org.junit.Assert.*;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.MemoryIntensiveTask;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.ResourceMemoryConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.MaxMinConsumer;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.MaxMinProvider;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;

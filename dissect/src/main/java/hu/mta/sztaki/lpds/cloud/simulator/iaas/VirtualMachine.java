@@ -67,7 +67,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * immediately because there is no transfers are required.
  * <li>Execution: Local and Mixed approaches execute without any disruptions,
  * while the Remote approach continuously uses the network for its disk
- * operations, thus disk&network intensive VMs will suffer significantly.
+ * operations, thus disk network intensive VMs will suffer significantly;
  * 
  * WARNING: the current implementation does not really reduce the processing
  * speed of a Remote storage based VM. This is future work.
@@ -85,11 +85,15 @@ public class VirtualMachine extends MaxMinConsumer {
 
 
 	/** needed for live migration:
-	 * pageSize: memory page size in bytes
+	 * pageSize: memory page size in Mbytes
 	 */
-	public final static double pageSize = 4096; 
-	
-	/**
+	public final static long pageSize = 4; 
+
+    public long getPageSize() {
+       return pageSize;
+    }
+
+   	/**
 	 * This class is defined to ensure one can differentiate errors that were
 	 * caused because the functions on the VM class are called in an improper
 	 * order. E.g. migration cannot be done if the VM is not running already.
@@ -163,35 +167,56 @@ public class VirtualMachine extends MaxMinConsumer {
 		}
 	}
 
-	/**
+	
+	public static class ResourceMemoryConsumption extends ResourceConsumption{
+                
+         /**
 	 * This class models the resource consumption of a memory-intensive
 	 * task.
-	 * @param  memDirtyingRate: percentage of pages dirtied every second 
-	 * @param  pageNum: total number of pages associated to this consumption
+	 * @param memDirtyingRate percentage of pages dirtied every second 
+	 * @param pageNum total number of pages associated to this consumption
 	 */
-	public static class MemoryIntensiveTask extends ResourceConsumption{
-
-		private double memDirtyingRate;
-		
-		public MemoryIntensiveTask(double total, double limit,
-				ResourceSpreader consumer, ResourceSpreader provider,
-				ConsumptionEvent e, double memDirtyingRate, int memorySize) {
-			super(total, limit, consumer, provider, e);
-			this.memDirtyingRate = memDirtyingRate;
-			setMemDirtyingRate(memDirtyingRate);
-			this.pageNum = memorySize;
-		}
-		
-		public void suspend(){
-			super.suspend();
-			this.currentMemDirtyingRate = 0.0;
-		}
-		
-		public boolean registerConsumption(){
-			this.currentMemDirtyingRate = this.memDirtyingRate;
-			return super.registerConsumption();
-		}
-		
+            
+		/**
+                 * @see ResourceConsumption
+                 * 
+                 */
+		public ResourceMemoryConsumption(final double total, final double limit,
+			final ResourceSpreader consumer, final ResourceSpreader provider,
+			final ConsumptionEvent e)
+                {
+                    super(total,limit,consumer,provider,e);
+                    setMemDirtyingRate(0.0);
+                    this.memSizeInBytes = 0;
+                }
+		/**
+                 * 
+                 * @see ResourceConsumption
+                 * @param pageNum
+                 * @param memDirtyingRate 
+                 */
+                public ResourceMemoryConsumption(final double total, final double limit,
+			final ResourceSpreader consumer, final ResourceSpreader provider,
+			final ConsumptionEvent e, final double pageNum, final double memDirtyingRate)
+                {
+                    super(total,limit,consumer,provider,e);
+                    this.pageNum = pageNum;
+                    setMemDirtyingRate(memDirtyingRate);
+                    this.memSizeInBytes = pageNum * pageSize;
+                }
+                
+                public void suspend()
+                {
+                    super.suspend();
+                    this.currentMemDirtyingRate = 0.0;
+                }
+                
+                public boolean registerConsumption()
+                {
+                    this.currentMemDirtyingRate = memDirtyingRate;
+                    return super.registerConsumption();
+                }
+                             
 	}
 	
 	private final EventSetup sdEvent = new EventSetup(State.SHUTDOWN);
@@ -460,8 +485,7 @@ public class VirtualMachine extends MaxMinConsumer {
 	 * Initiates the startup procedure of a VM. If the VM is in destroyed state
 	 * then it ensures the disk image for the VM is ready to be used.
 	 * 
-	 * @param pm
-	 *            the physical machine that hosts the VM.
+	 * 
 	 * @param vasource
 	 *            the repository where the VA for this VM is found. If null, the
 	 *            function assumes it is found in the hosting PM's repository.
@@ -895,13 +919,13 @@ public class VirtualMachine extends MaxMinConsumer {
 	
 	public ResourceConsumption newComputeTask(final double total,
 			final double limit, final ResourceConsumption.ConsumptionEvent e,
-			double dirtyingRate, int pageNumber)
+			double dirtyingRate, double pageNumber)
 			throws StateChangeException, NetworkException {
 		if (ra == null) {
 			return null;
 		}
-		ResourceConsumption cons = new ResourceConsumption(total, limit, this,
-				ra.host, e);
+		ResourceConsumption cons = new ResourceMemoryConsumption(total, limit, this,
+				ra.host, e,pageNumber,dirtyingRate);
 		if (cons.registerConsumption()) {
 			final long bgnwload = va.getBgNetworkLoad();
 			if (bgnwload > 0) {
@@ -913,7 +937,7 @@ public class VirtualMachine extends MaxMinConsumer {
 						minBW, ra.host.localDisk, vasource,
 						new ConsumptionEventAdapter());
 			}
-			return cons;
+			return cons;                        
 		} else {
 			return null;
 		}
@@ -954,18 +978,25 @@ public class VirtualMachine extends MaxMinConsumer {
 	 * @return the total dirtying rate on the VM
 	 */
 	public double getTotalDirtyingRate(){
-		int pageNum = 0;
+		double dirtyBytes = 0.0;
 		for(ResourceConsumption r: this.underProcessing)
-			pageNum = (int) (r.getMemDirtyingRate() * r.getPageNum());
-		return pageNum;
+			dirtyBytes += (r.getMemDirtyingRate() * r.getMemSizeInBytes());
+		return dirtyBytes/getMemSize();
 	}
 	
-	public int getTotalMemoryPages(){  
-		return (int) (this.ra.allocated.requiredMemory / pageSize);
+	public double getTotalMemoryPages(){  
+		return (double) (this.ra.allocated.requiredMemory / pageSize);
 	}
 	
 	@Override
 	public String toString() {
 		return "VM(" + currState + " " + ra + " " + super.toString() + ")";
 	}
+        
+        public long getMemSize(){
+            return this.ra.allocated.requiredMemory;
+        }
+        
+       
+        
 }

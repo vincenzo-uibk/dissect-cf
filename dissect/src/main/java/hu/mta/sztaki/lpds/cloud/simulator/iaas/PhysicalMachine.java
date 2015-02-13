@@ -271,7 +271,7 @@ public class PhysicalMachine extends MaxMinProvider implements
 	 *            defines the total physical memory this machine has under
 	 *            control (in bytes)
 	 * @param disk
-	 *            defines the local physical disk & networking this machine has
+	 *            defines the local physical disk networking this machine has
 	 *            under control
 	 * @param onD
 	 *            defines the time delay between the machine's switch on and the
@@ -770,4 +770,13 @@ public class PhysicalMachine extends MaxMinProvider implements
 					reallyFreeCapacities, freed);
 		}
 	}
+        
+        public double getTotalDirtyingRate()
+        {
+            double dirtyBytes = 0.0;
+            for(VirtualMachine vm : publicVms)
+                if(vm.getState() == VirtualMachine.State.RUNNING)
+                    dirtyBytes += vm.getTotalDirtyingRate() * vm.getMemSize();
+            return dirtyBytes / this.getCapacities().requiredMemory;            
+        }
 }

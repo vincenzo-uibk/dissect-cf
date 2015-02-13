@@ -48,6 +48,9 @@ import org.junit.Test;
 
 import at.ac.uibk.dps.cloud.simulator.test.ConsumptionEventAssert;
 import at.ac.uibk.dps.cloud.simulator.test.IaaSRelatedFoundation;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine.ResourceAllocation;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.ResourceMemoryConsumption;
+import org.junit.Ignore;
 
 public class VMTest extends IaaSRelatedFoundation {
 
@@ -55,6 +58,7 @@ public class VMTest extends IaaSRelatedFoundation {
 	VirtualAppliance va, vaWithBG;
 	VirtualMachine centralVM, centralVMwithBG;
 	Repository repo;
+        final static long defaultMemory = 1000;
 
 	@Before
 	public void initializeObject() throws Exception {
@@ -765,4 +769,18 @@ public class VMTest extends IaaSRelatedFoundation {
 							+ st, centralVM.getResourceAllocation());
 		}
 	}
+        
+                
+        @Test(timeout = 100)
+        public void testGetTotalDR() throws StateChangeException, NetworkException, VMManagementException
+        {
+            ConsumptionEventAssert cae = new ConsumptionEventAssert();
+            switchOnVMwithMaxCapacity(centralVM, true);
+            centralVM.newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 0.5, centralVM.getTotalMemoryPages()/2);
+            Timed.fire();
+            Assert.assertTrue(centralVM.getTotalDirtyingRate() == 0.25);
+            centralVM.newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 1.0, centralVM.getTotalMemoryPages()/2);
+            Timed.fire();
+            Assert.assertTrue(centralVM.getTotalDirtyingRate() == 0.75);
+        }
 }

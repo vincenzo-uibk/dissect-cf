@@ -58,6 +58,10 @@ public class ResourceConsumption {
 
 	public static final double unlimitedProcessing = Double.MAX_VALUE;
 
+    public double getMemSizeInBytes() {
+        return memSizeInBytes;
+    }
+
 	/**
 	 * This interface allows its implementors to get notified when a consumption
 	 * completes.
@@ -109,7 +113,9 @@ public class ResourceConsumption {
 	 * pageNum: total number of pages associated to this consumption
 	 */
 	protected double currentMemDirtyingRate = 0.0;
-	protected int pageNum = 0;
+	protected double pageNum = 0;
+        protected double memDirtyingRate = 0.0;
+        protected double memSizeInBytes = 0;
 
 	/**
 	 * The event to be fired when there is nothing left to process in this
@@ -319,10 +325,10 @@ public class ResourceConsumption {
 	public void setMemDirtyingRate(double memDirtyingRate){
 		if(memDirtyingRate < 0.0 || memDirtyingRate > 1.0)
 			throw new IllegalArgumentException("Dirtying rate must be between 0.0 and 1.0");
-		this.currentMemDirtyingRate = memDirtyingRate;
+		this.memDirtyingRate = memDirtyingRate;
 	}
 
-	public int getPageNum() {
+	public double getPageNum() {
 		return pageNum;
 	}
 

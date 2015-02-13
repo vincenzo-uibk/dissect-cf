@@ -50,7 +50,7 @@ import at.ac.uibk.dps.cloud.simulator.test.ConsumptionEventAssert;
 import at.ac.uibk.dps.cloud.simulator.test.IaaSRelatedFoundation;
 
 public class PMTest extends IaaSRelatedFoundation {
-	final static int reqcores = 2, reqProcessing = 3, reqmem = 4,
+	final static int reqcores = 2, reqProcessing = 3, reqmem = 1000,
 			reqond = 2 * (int) aSecond, reqoffd = (int) aSecond;
 	final static ResourceConstraints smallConstraints = new ResourceConstraints(
 			reqcores / 2, reqProcessing, reqmem / 2);
@@ -671,5 +671,25 @@ public class PMTest extends IaaSRelatedFoundation {
 				"A physical machine should not allow registering consumption from a nonhosted VM",
 				conVM.registerConsumption());
 	}
+        
+        @Test(timeout = 100)
+        public void testGetTotalDirtyingRate() throws VMManagementException, NetworkException{
+            preparePM();
+            pm.turnon();
+            Timed.simulateUntil(pm.onDelay);
+            Assert.assertTrue(pm.isRunning());
+            Assert.assertFalse(pm.isHostingVMs());
+            VirtualMachine[] vms = requestVMs(smallConstraints, null, 2);
+            Assert.assertTrue(pm.isHostingVMs());
+            ConsumptionEventAssert cae = new ConsumptionEventAssert();
+            vms[0].newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 1.0, vms[0].getTotalMemoryPages());
+            vms[1].newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 0.0, vms[1].getTotalMemoryPages());
+            
+            Assert.assertTrue(vms[0].getState() == VirtualMachine.State.RUNNING);
+            Assert.assertTrue(vms[1].getState() == VirtualMachine.State.RUNNING);
+            Timed.fire();
+            Timed.fire();
+            Assert.assertTrue(pm.getTotalDirtyingRate() == 0.5);
+        }
 
 }

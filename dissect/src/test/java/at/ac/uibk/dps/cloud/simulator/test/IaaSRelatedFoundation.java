@@ -55,6 +55,7 @@ public class IaaSRelatedFoundation extends VMRelatedFoundation {
 	public final static int dummyPMCoreCount = 1;
 	public final static int vaSize = 100;
 	public static HashMap<String, Integer> globalLatencyMap = new HashMap<String, Integer>();
+        private final static long maxStorageCapacity = Long.MAX_VALUE;
 
 	@BeforeClass
 	public static void preloadIaaS() throws Exception {
@@ -72,6 +73,12 @@ public class IaaSRelatedFoundation extends VMRelatedFoundation {
 		return name;
 	}
 
+        public static PhysicalMachine dummyPMcreator(final int corecount, final long memory) {
+		return new PhysicalMachine(corecount, 1, memory, new Repository(
+				vaSize * 200, generateName("M", 1), 1, 1, 1, globalLatencyMap),
+				1, 1, defaultTransitions);
+	}
+        
 	public static PhysicalMachine dummyPMcreator(final int corecount) {
 		return new PhysicalMachine(corecount, 1, vaSize * 40, new Repository(
 				vaSize * 200, generateName("M", 1), 1, 1, 1, globalLatencyMap),
@@ -81,9 +88,14 @@ public class IaaSRelatedFoundation extends VMRelatedFoundation {
 	public static PhysicalMachine dummyPMcreator() {
 		return dummyPMcreator(dummyPMCoreCount);
 	}
+        
+        public static PhysicalMachine dummyPMcreatorWithMemory(long memory) {
+		return dummyPMcreator(dummyPMCoreCount,memory);
+	}
+        
 
 	public static Repository dummyRepoCreator(boolean withVA) {
-		Repository repo = new Repository(vaSize * 400, generateName("R", 3), 1,
+		Repository repo = new Repository(maxStorageCapacity, generateName("R", 3), 1,
 				1, 1, globalLatencyMap);
 		if (withVA) {
 			VirtualAppliance va = new VirtualAppliance("VA", 2000, 0, false,

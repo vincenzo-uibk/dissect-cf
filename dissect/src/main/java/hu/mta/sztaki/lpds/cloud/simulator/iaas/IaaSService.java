@@ -246,7 +246,7 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine> {
 	}
 
 	/**
-	 * This function allows the IaaS to reduce in size. <br/>
+	 * This function allows the IaaS to reduce in size.
 	 * This function might migrate VMs from the deregistered host to ones
 	 * remaining in the system. If the deregistered host contains VMs that
 	 * cannot be migrated, or there is nowhere to migrate the VMs then the
@@ -344,9 +344,7 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine> {
 	 * 
 	 * Currently there is no transfer implemented!
 	 * 
-	 * @param pm
-	 *            the physical machine to be dropped from the control of the
-	 *            system
+	 * 
 	 */
 	public void deregisterRepository(final Repository r)
 			throws IaaSHandlingException {
