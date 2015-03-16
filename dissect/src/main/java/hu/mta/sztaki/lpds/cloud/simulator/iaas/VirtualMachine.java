@@ -88,9 +88,20 @@ public class VirtualMachine extends MaxMinConsumer {
 	 * pageSize: memory page size in Mbytes
 	 */
 	public final static long pageSize = 4; 
+        public final static long numRound = 5;
+        private final static long WWS_MAX_SIZE = 256;
+    private int rounds = 0;
 
+    public int getRounds(){
+        return rounds;
+    }
+    
     public long getPageSize() {
        return pageSize;
+    }
+
+    private StorageObject identifyWWS(String id) {
+         return new StorageObject(id, (long) ((getTotalMemoryPages() * pageSize)* getTotalDirtyingRate()),false);
     }
 
    	/**
@@ -619,6 +630,70 @@ public class VirtualMachine extends MaxMinConsumer {
 		}
 		setState(State.SUSPENDED_MIG);
 	}
+        
+        /**
+	 * This function is responsible for the actual transfer between the old
+	 * physical machine and the new one. This function ensures the transfer for
+	 * both the disk and memory states.
+	 * 
+	 * WARNING: in case an error occurs (e.g. there is not enough space on the
+	 * target physical machine's repository) then this function leaves the VM in
+	 * SUSPENDED_MIG state.
+	 * 
+	 * @param target
+	 *            the new resource allocation on which the resume operation
+	 *            should take place
+	 */
+	private void actualLiveMigration(final PhysicalMachine.ResourceAllocation target)
+			throws NetworkNode.NetworkException {
+		final boolean[] cancelMigration = new boolean[1];
+		cancelMigration[0] = false;
+		final Repository to = target.host.localDisk;
+		class MigrationEvent extends ConsumptionEventAdapter {
+			int eventcounter = 1;
+
+			@Override
+			public void conComplete() {
+				if (cancelMigration[0]) {
+					// Cleanup after faulty transfer
+					to.deregisterObject(savedmemory.id);
+				} else {
+					eventcounter--;
+					if (eventcounter == 0) {
+						// Both the disk and memory state has completed its
+						// transfer.
+						try {
+							resumeAfterMigration(target);
+						} catch (NetworkException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}
+
+		for (final ResourceConsumption con : suspendedTasks) {
+			con.setProvider(target.host);
+		}
+
+		final MigrationEvent mp = new MigrationEvent();
+		// inefficiency: the memory is moved twice to the
+		// target pm because of the way resume works currently
+		if (vatarget.requestContentDelivery(savedmemory.id, to, mp)) {
+			if (va.getBgNetworkLoad() > 0) {
+				// Remote scenario
+				return;
+			} else {
+				// Local&Mixed scenario
+				mp.eventcounter++;
+				if (vatarget.requestContentDelivery(disk.id, to, mp)) {
+					return;
+				}
+				// The disk could not be transferred:
+				cancelMigration[0] = true;
+			}
+		}
+	}
 
 	/**
 	 * Moves all data necessary for the VMs execution from its current physical
@@ -665,6 +740,90 @@ public class VirtualMachine extends MaxMinConsumer {
 		}
 	}
 
+        /**
+	 * Moves all data necessary for the VMs execution from its current physical
+	 * machine to another.
+	 * 
+	 * WARNING: in cases when the migration cannot complete, the VM will be left
+	 * in a special suspended state: the SUSPENDED_MIG. This allows users to
+	 * recover VMs and initiate the migration procedure to someplace else.
+	 * 
+	 * 
+	 * @param target
+	 *            the new resource allocation on which the resume operation
+	 *            should take place
+	 * @throws StateChangeException
+	 *             if the VM is not in running state currently
+	 * @throws VMManagementException
+	 *             if the system have had troubles during the suspend operation.
+         * @throws NetworkException
+         *             if target host is not reachable
+	 */
+	public void migrateLive(final PhysicalMachine.ResourceAllocation target)
+			throws VMManagementException, NetworkNode.NetworkException {
+		// Cross cloud migration needs an update on the vastorage also,
+		// otherwise the VM will use a long distance repository for its
+		// background network load!
+                
+                final boolean[] cancelMigration = new boolean[1];
+                
+		if (va.getBgNetworkLoad() <= 0 && ra != null)
+                    NetworkNode.checkConnectivity(ra.host.localDisk,
+						target.host.localDisk);
+		
+                //Initial transfer
+                final String memid = "VM-Memory-State-of-" + hashCode();
+		final String tmemid = "Temp-" + memid;
+		final Repository pmdisk = ra.host.localDisk;
+		savedmemory = new StorageObject(tmemid, ra.allocated.requiredMemory,
+				false);
+		if (!pmdisk.registerObject(savedmemory)) {
+			throw new VMManagementException(
+					"Not enough space on localDisk for the suspend operation of "
+							+ savedmemory);
+		}
+                final Repository to = target.host.localDisk;
+                class EndRoundEvent extends ConsumptionEventAdapter {
+			int eventcounter = 1;
+
+			@Override
+			public void conComplete() {
+                                eventcounter--;
+                                to.deregisterObject(savedmemory.id);
+                        }
+		}
+                EndRoundEvent endround = new EndRoundEvent();
+                //Initial memory transfer
+                vatarget.requestContentDelivery(tmemid, to, endround);
+                String id = "VM-Memory-State-of-" + hashCode();
+                savedmemory = identifyWWS(id);
+                if (!pmdisk.registerObject(savedmemory)) {
+			throw new VMManagementException(
+					"Not enough space on localDisk for the suspend operation of "
+							+ savedmemory);
+		}
+                rounds = 1;
+                while(savedmemory.size > WWS_MAX_SIZE && rounds < numRound ){
+                    vatarget.requestContentDelivery(id, target.host.localDisk, endround);
+                    id = "VM-Memory-State-of-" + hashCode();
+                    savedmemory = identifyWWS(id);
+                    if(!cancelMigration[0])
+                        rounds++;
+                }
+                suspend(new EventSetup(State.MIGRATING) {
+				@Override
+				public void changeEvents() {
+					super.changeEvents();
+					try {
+						actualLiveMigration(target);
+					} catch (NetworkException e) {
+						// Ignore. This should never happen we have checked for
+						// the connection beforehand.
+					}
+				}
+		});	
+	}
+        
 	/**
 	 * Destroys the VM, and cleans up all repositories that could contain disk
 	 * or memory states.

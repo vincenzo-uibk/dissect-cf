@@ -680,11 +680,11 @@ public class PMTest extends IaaSRelatedFoundation {
             Assert.assertTrue(pm.isRunning());
             Assert.assertFalse(pm.isHostingVMs());
             VirtualMachine[] vms = requestVMs(smallConstraints, null, 2);
+            Timed.simulateUntilLastEvent();
             Assert.assertTrue(pm.isHostingVMs());
             ConsumptionEventAssert cae = new ConsumptionEventAssert();
             vms[0].newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 1.0, vms[0].getTotalMemoryPages());
             vms[1].newComputeTask(100000, ResourceConsumption.unlimitedProcessing, cae, 0.0, vms[1].getTotalMemoryPages());
-            
             Assert.assertTrue(vms[0].getState() == VirtualMachine.State.RUNNING);
             Assert.assertTrue(vms[1].getState() == VirtualMachine.State.RUNNING);
             Timed.fire();

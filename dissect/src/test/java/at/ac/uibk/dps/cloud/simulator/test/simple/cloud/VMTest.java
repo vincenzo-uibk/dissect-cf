@@ -479,6 +479,15 @@ public class VMTest extends IaaSRelatedFoundation {
 			Timed.simulateUntilLastEvent();
 		}
 	}
+        
+        private void doLiveMigration(PhysicalMachine from, PhysicalMachine to,
+			VirtualMachine vm, boolean sim) throws VMManagementException,
+			NetworkException {
+		from.migrateVMLive(vm, to);
+		if (sim) {
+			Timed.simulateUntilLastEvent();
+		}
+	}
 
 	private PhysicalMachine simpleMigrate(final VirtualMachine toUse)
 			throws VMManagementException, NetworkException {
@@ -508,6 +517,36 @@ public class VMTest extends IaaSRelatedFoundation {
 						- aSecond, pmtarget.getTotalProcessed(), 0.0001);
 		return pmtarget;
 	}
+        
+        private PhysicalMachine simpleLiveMigrate(final VirtualMachine toUse)
+			throws VMManagementException, NetworkException {
+		final PhysicalMachine pmtarget = createAndExecutePM();
+		Assert.assertTrue(
+				"The target PM should not have anything in its storage",
+				pmtarget.localDisk.getMaxStorageCapacity() == pmtarget.localDisk
+						.getFreeStorageCapacity());
+		switchOnVMwithMaxCapacity(toUse, true);
+		final double beforePmCon = pm.getTotalProcessed();
+		ConsumptionEventAssert cae = new ConsumptionEventAssert();
+		final double ctLen = 100 * aSecond;
+		toUse.newComputeTask(ctLen, 1, cae,0.71,centralVM.getTotalMemoryPages());
+		Timed.simulateUntil(Timed.getFireCount() + aSecond);
+                doLiveMigration(pm, pmtarget, toUse, true);
+                //Assert.assertTrue("Rounds number: "+toUse.getRounds(),toUse.getRounds()<VirtualMachine.numRound);
+		Assert.assertTrue("VM is not on its new host",
+				pmtarget.publicVms.contains(toUse));
+		Assert.assertFalse("VM is still on its old host",
+				pm.publicVms.contains(toUse));
+		Assert.assertEquals("VM is not properly resumed",
+				VirtualMachine.State.RUNNING, toUse.getState());
+		Assert.assertEquals(
+				"Source VM should have minority of the consumption",
+				beforePmCon + aSecond, pm.getTotalProcessed(), 0.0001);
+		Assert.assertEquals(
+				"Target VM should have the majority of the consumption", ctLen
+						- aSecond, pmtarget.getTotalProcessed(), 0.0001);
+		return pmtarget;
+	}
 
 	@Test(timeout = 100)
 	public void simpleMigration() throws VMManagementException,
@@ -523,6 +562,20 @@ public class VMTest extends IaaSRelatedFoundation {
 				pmtarget.localDisk.getFreeStorageCapacity());
 	}
 
+        @Test(timeout = 100)
+	public void simpleLiveMigration() throws VMManagementException,
+			NetworkException {
+		final long beforeSize = pm.localDisk.getFreeStorageCapacity();
+		PhysicalMachine pmtarget = simpleLiveMigrate(centralVM);
+		Assert.assertEquals(
+				"The source of the migration should not have any storage occupied by the VM's remainders",
+				beforeSize, pm.localDisk.getFreeStorageCapacity());
+		Assert.assertEquals(
+				"The target of the migration should only have the disk of the VM",
+				pmtarget.localDisk.getMaxStorageCapacity() - va.size,
+				pmtarget.localDisk.getFreeStorageCapacity());
+	}
+        
 	@Test(timeout = 100)
 	public void simpleMigrationWithBgNWL() throws VMManagementException,
 			NetworkException {
