@@ -788,6 +788,8 @@ public class VirtualMachine extends MaxMinConsumer {
 
 			@Override
 			public void conComplete() {
+                                if(!cancelMigration[0])
+                                    rounds++;
                                 eventcounter--;
                                 to.deregisterObject(savedmemory.id);
                         }
@@ -802,14 +804,19 @@ public class VirtualMachine extends MaxMinConsumer {
 					"Not enough space on localDisk for the suspend operation of "
 							+ savedmemory);
 		}
-                rounds = 1;
-                while(savedmemory.size > WWS_MAX_SIZE && rounds < numRound ){
+                
+                //while(savedmemory.size > WWS_MAX_SIZE && rounds < numRound ){
                     vatarget.requestContentDelivery(id, target.host.localDisk, endround);
                     id = "VM-Memory-State-of-" + hashCode();
                     savedmemory = identifyWWS(id);
-                    if(!cancelMigration[0])
-                        rounds++;
-                }
+                    vatarget.requestContentDelivery(id, target.host.localDisk, endround);
+                    id = "VM-Memory-State-of-" + hashCode();
+                    savedmemory = identifyWWS(id);
+                    //vatarget.requestContentDelivery(id, target.host.localDisk, endround);
+                    //id = "VM-Memory-State-of-" + hashCode();
+                    //savedmemory = identifyWWS(id); 
+                   
+                //}
                 suspend(new EventSetup(State.MIGRATING) {
 				@Override
 				public void changeEvents() {
