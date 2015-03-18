@@ -788,35 +788,33 @@ public class VirtualMachine extends MaxMinConsumer {
 
 			@Override
 			public void conComplete() {
-                                if(!cancelMigration[0])
-                                    rounds++;
-                                eventcounter--;
-                                to.deregisterObject(savedmemory.id);
+                            if(!cancelMigration[0])
+                                rounds++;
+                            eventcounter--;
+                            
+                            to.deregisterObject(savedmemory.id);
+                            pmdisk.deregisterObject(savedmemory.id);
+                            
+                            if( savedmemory.size > WWS_MAX_SIZE && rounds < numRound ){
+                                String id = "VM-Memory-State-of-" + hashCode();
+                                savedmemory = identifyWWS(id);
+                                try{
+                                    pmdisk.registerObject(savedmemory);
+                                    vatarget.requestContentDelivery(id, to, new EndRoundEvent());
+                                }
+                                catch(Exception e){
+                                    
+                                }
+                            }
                         }
+
+                
 		}
                 EndRoundEvent endround = new EndRoundEvent();
+                
                 //Initial memory transfer
                 vatarget.requestContentDelivery(tmemid, to, endround);
-                String id = "VM-Memory-State-of-" + hashCode();
-                savedmemory = identifyWWS(id);
-                if (!pmdisk.registerObject(savedmemory)) {
-			throw new VMManagementException(
-					"Not enough space on localDisk for the suspend operation of "
-							+ savedmemory);
-		}
-                
-                //while(savedmemory.size > WWS_MAX_SIZE && rounds < numRound ){
-                    vatarget.requestContentDelivery(id, target.host.localDisk, endround);
-                    id = "VM-Memory-State-of-" + hashCode();
-                    savedmemory = identifyWWS(id);
-                    vatarget.requestContentDelivery(id, target.host.localDisk, endround);
-                    id = "VM-Memory-State-of-" + hashCode();
-                    savedmemory = identifyWWS(id);
-                    //vatarget.requestContentDelivery(id, target.host.localDisk, endround);
-                    //id = "VM-Memory-State-of-" + hashCode();
-                    //savedmemory = identifyWWS(id); 
                    
-                //}
                 suspend(new EventSetup(State.MIGRATING) {
 				@Override
 				public void changeEvents() {
@@ -830,6 +828,8 @@ public class VirtualMachine extends MaxMinConsumer {
 				}
 		});	
 	}
+        
+        
         
 	/**
 	 * Destroys the VM, and cleans up all repositories that could contain disk

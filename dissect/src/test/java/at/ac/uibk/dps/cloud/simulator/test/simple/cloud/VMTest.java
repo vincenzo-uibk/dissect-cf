@@ -529,7 +529,7 @@ public class VMTest extends IaaSRelatedFoundation {
 		final double beforePmCon = pm.getTotalProcessed();
 		ConsumptionEventAssert cae = new ConsumptionEventAssert();
 		final double ctLen = 100 * aSecond;
-		toUse.newComputeTask(ctLen, 1, cae,0.95,centralVM.getTotalMemoryPages());
+		toUse.newComputeTask(ctLen, 1, cae,1.0,centralVM.getTotalMemoryPages());
 		Timed.simulateUntil(Timed.getFireCount() + aSecond);
                 doLiveMigration(pm, pmtarget, toUse, true);
                 //Assert.assertTrue("Rounds number: "+toUse.getRounds(),toUse.getRounds()==VirtualMachine.numRound);
