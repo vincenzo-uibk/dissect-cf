@@ -70,6 +70,8 @@ public abstract class ResourceSpreader {
 	private FreqSyncer mySyncer = null;
 	private ArrayList<ResourceConsumption> underAddition = new ArrayList<ResourceConsumption>();
 	private ArrayList<ResourceConsumption> underRemoval = new ArrayList<ResourceConsumption>();
+	public final List<ResourceConsumption> toBeRemoved = Collections
+			.unmodifiableList(underRemoval);
 	public final List<ResourceConsumption> toBeAdded = Collections
 			.unmodifiableList(underAddition);
 
@@ -608,7 +610,7 @@ public abstract class ResourceSpreader {
 	public String toString() {
 		return "RS(processing: "
 				+ toProcess.toString()
-				+ "in power state: "
+				+ " in power state: "
 				+ (currentPowerBehavior == null ? "-" : currentPowerBehavior
 						.toString()) + ")";
 	}

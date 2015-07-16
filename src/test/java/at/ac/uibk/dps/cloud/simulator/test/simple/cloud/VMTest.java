@@ -423,21 +423,19 @@ public class VMTest extends IaaSRelatedFoundation {
 		simpleSusResume(centralVMwithBG);
 	}
 
-	@Test(expected = VMManagementException.class, timeout = 100)
-	public void futureNotFaultySuspendTest() throws VMManagementException,
+	@Test(timeout = 100)
+	public void ensureSuspendUsesJustEnoughDisk() throws VMManagementException,
 			NetworkException {
-		// FIXME: this should pass later
 		switchOnVMwithMaxCapacity(centralVM, true);
 		long memless = pm.localDisk.getFreeStorageCapacity();
 		long memsize = centralVM.getResourceAllocation().allocated.requiredMemory;
-		// Ideally this should be enough but not right now!
 		pm.localDisk.registerObject(new StorageObject("SpaceFiller", memless
 				- memsize, false));
 		centralVM.suspend();
 	}
 
 	@Test(expected = VMManagementException.class, timeout = 100)
-	public void realFaultySuspendTest() throws VMManagementException,
+	public void ensureSuspendFailsIfNotEnoughDiskSpace() throws VMManagementException,
 			NetworkException {
 		switchOnVMwithMaxCapacity(centralVM, true);
 		pm.localDisk.registerObject(new StorageObject("SpaceFiller",
@@ -445,10 +443,9 @@ public class VMTest extends IaaSRelatedFoundation {
 		centralVM.suspend();
 	}
 
-	@Test(expected = VMManagementException.class, timeout = 100)
-	public void futureNotFauaultyResumeTest() throws VMManagementException,
+	@Test(timeout = 100)
+	public void ensureResumeUsesJustEnoughDisk() throws VMManagementException,
 			NetworkException {
-		// FIXME: this should pass later
 		switchOnVMwithMaxCapacity(centralVM, true);
 		centralVM.suspend();
 		Timed.simulateUntilLastEvent();
@@ -498,10 +495,10 @@ public class VMTest extends IaaSRelatedFoundation {
 				VirtualMachine.State.RUNNING, toUse.getState());
 		Assert.assertEquals(
 				"Source VM should have minority of the consumption",
-				beforePmCon + aSecond, pm.getTotalProcessed(), 0.0001);
+				beforePmCon + aSecond, pm.getTotalProcessed(), 0.01);
 		Assert.assertEquals(
 				"Target VM should have the majority of the consumption", ctLen
-						- aSecond, pmtarget.getTotalProcessed(), 0.0001);
+						- aSecond, pmtarget.getTotalProcessed(), 0.01);
 		return pmtarget;
 	}
 
@@ -574,10 +571,10 @@ public class VMTest extends IaaSRelatedFoundation {
 				VirtualMachine.State.RUNNING, centralVM.getState());
 		Assert.assertEquals(
 				"Source VM should have the majority of the consumption",
-				beforePmCon + ctLen - aSecond, pm.getTotalProcessed(), 0.0001);
+				beforePmCon + ctLen - aSecond, pm.getTotalProcessed(), 0.01);
 		Assert.assertEquals(
 				"Target VM should have the minority of the consumption",
-				aSecond, pmtarget.getTotalProcessed(), 0.0001);
+				aSecond, pmtarget.getTotalProcessed(), 0.01);
 
 	}
 
