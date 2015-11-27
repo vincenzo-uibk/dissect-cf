@@ -28,6 +28,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.CPUConsumptionMo
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.NetConsumptionModel;
+import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PiecewiseLinearCPUModel;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 
@@ -52,7 +53,7 @@ public class PowerTransitionGenerator {
                 PhysicalMachine.State.class);
         returner.put(PhysicalMachine.PowerStateKind.network, netStates);
         PowerState hostDefault = new PowerState(idlepower, maxpower
-                - idlepower, CPUConsumptionModel.class);
+                - idlepower, PiecewiseLinearCPUModel.class);
         PowerState diskDefault = new PowerState(idlepower / diskDivider / 2,
                 (maxpower - idlepower) / diskDivider / 2,
                 LinearConsumptionModel.class);

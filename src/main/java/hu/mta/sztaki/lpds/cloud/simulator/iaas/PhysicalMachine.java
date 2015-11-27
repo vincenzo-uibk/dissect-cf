@@ -550,6 +550,17 @@ public class PhysicalMachine extends MaxMinProvider implements
 
 	}
 
+         public void migrateVMLive(final VirtualMachine vm, final PhysicalMachine target)
+			throws VMManagementException, NetworkNode.NetworkException {
+		if (vms.contains(vm)) {
+			vm.migrateLive(target.allocateResources(
+					vm.getResourceAllocation().allocated, true,
+					migrationAllocLen));
+		}
+
+	}
+
+        
 	@Override
 	public void reallocateResources(final VirtualMachine vm,
 			final ResourceConstraints newresources) {

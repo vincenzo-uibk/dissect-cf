@@ -103,6 +103,18 @@ public class ResourceConsumption {
 	boolean unassigned;
 	boolean inassginmentprocess;
 
+      	/**
+	 * Added for live migration
+	 * memDirtyingRate: percentage of pages dirtied
+	 * pageNum: total number of pages associated to this consumption
+	 */
+	protected double currentMemDirtyingRate = 0.0;
+	protected double pageNum = 0;
+        protected double memDirtyingRate = 0.0;
+        protected double memSizeInBytes = 0;
+
+  
+        
 	/**
 	 * The event to be fired when there is nothing left to process in this
 	 * consumption. If this variable is null then the event was already fired.
@@ -300,6 +312,28 @@ public class ResourceConsumption {
 		calcCompletionDistance();
 		return realLimit;
 	}
+
+        public double getMemDirtyingRate() {
+		return currentMemDirtyingRate;
+	}
+
+	public void setMemDirtyingRate(double memDirtyingRate){
+		if(memDirtyingRate < 0.0 || memDirtyingRate > 1.0)
+			throw new IllegalArgumentException("Dirtying rate must be between 0.0 and 1.0");
+		this.memDirtyingRate = memDirtyingRate;
+	}
+
+	public double getPageNum() {
+		return pageNum;
+	}
+
+	public void setPageNum(int pageNum) {
+		this.pageNum = pageNum;
+	}
+
+        public double getMemSizeInBytes() {
+                return memSizeInBytes;
+        }
 
 	@Override
 	public String toString() {

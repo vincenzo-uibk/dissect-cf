@@ -12,7 +12,7 @@ package hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling;
 public class CPUConsumptionModel extends PowerState.ConsumptionModel {
 
     final double alphaConst = 73.13;
-    final double hwConst = 862.6;
+    final double hwConst = 371.0;
     @Override
     protected double evaluateConsumption(double load) {
         return Math.min(alphaConst * Math.log((load+0.01))  + hwConst,myPowerState.getConsumptionRange() + myPowerState.getMinConsumption());
